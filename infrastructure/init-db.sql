@@ -1,0 +1,3 @@
+CREATE DATABASE users_db;
+CREATE DATABASE music_db;
+CREATE DATABASE playlist_db;
