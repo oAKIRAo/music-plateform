@@ -1,0 +1,96 @@
+package com.musicplatform.music_service.service;
+
+import com.musicplatform.music_service.dto.SongDTO;
+import com.musicplatform.music_service.entity.Song;
+import com.musicplatform.music_service.mapper.SongMapper;
+import com.musicplatform.music_service.repository.SongRepository;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.springframework.core.io.Resource;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.UrlResource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class SongService {
+
+    private final SongRepository songRepository;
+    private final SongMapper songMapper;
+
+    @Value("${file.upload.dir}")
+    private String uploadDir;
+
+    public List<SongDTO> getAllSongs() {
+        return songRepository.findAll()
+                .stream()
+                .map(songMapper::toSongDTO)
+                .toList();
+    }
+
+    public SongDTO getSongById(Long id) {
+       return songRepository.findById(id)
+               .map(songMapper::toSongDTO)
+               .orElseThrow(() -> new RuntimeException("Song not found"));
+
+    }
+
+    public SongDTO uploadSong(MultipartFile file, SongDTO songDTO) {
+        try {
+            // 1. Generate unique filename
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            // 2. Build full path
+            Path uploadPath = Paths.get(uploadDir);
+            // 3. Create folder if not exists
+            Files.createDirectories(uploadPath);
+            // 4. Save file to disk
+            Path filePath = uploadPath.resolve(fileName);
+            Files.copy(file.getInputStream(), filePath);
+            // 5. Extract duration automatically
+            AudioFile audioFile = AudioFileIO.read(filePath.toFile());
+            int duration = audioFile.getAudioHeader().getTrackLength();
+            // 6. Set filePath + duration in entity
+            Song song = songMapper.toSong(songDTO);
+            song.setFilePath(filePath.toString());
+            song.setDuration(duration);
+            // 7. Save metadata to DB
+            Song saved = songRepository.save(song);
+            // 8. Return DTO
+            return songMapper.toSongDTO(saved);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to upload file: " + e.getMessage());
+        }
+    }
+
+    public Resource streamSong(Long id) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Song not found"));
+        try {
+            Path path = Paths.get(song.getFilePath());
+            Resource resource = new UrlResource(path.toUri());
+            if(!resource.exists()) {
+                throw new RuntimeException("File not found");
+            }
+            return resource;
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("File not found " + e.getMessage());
+        }
+    }
+
+    public void deleteSongById(Long id) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Song not found"));
+        songRepository.delete(song);
+    }
+}
