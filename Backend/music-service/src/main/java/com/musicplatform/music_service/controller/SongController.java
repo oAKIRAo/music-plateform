@@ -29,20 +29,8 @@ public class SongController {
 
     @PostMapping("/upload")
     public ResponseEntity<SongDTO> uploadSong(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title,
-            @RequestParam("artist") String artist,
-            @RequestParam("album") String album,
-            @RequestParam(value = "duration", required = false) Integer duration) {
-
-        SongDTO songDTO = SongDTO.builder()
-                .title(title)
-                .artist(artist)
-                .album(album)
-                .duration(duration)
-                .build();
-
-        return ResponseEntity.status(201).body(songService.uploadSong(file, songDTO));
+            @RequestParam("file") MultipartFile file){
+        return ResponseEntity.status(201).body(songService.uploadSong(file));
     }
 
     @GetMapping("/stream/{id}")

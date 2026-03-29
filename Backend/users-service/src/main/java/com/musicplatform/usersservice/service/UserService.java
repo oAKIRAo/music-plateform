@@ -13,7 +13,7 @@ public class UserService {
     private  final UserRepository userRepository;
     private  final UserMapper userMapper;
 
-    public UserDTO getUserById(long id) {
+    public UserDTO getUserById(Long id) {
         return userRepository.findById(id)
                 .map(userMapper::toUserDTO)
                 .orElseThrow(() -> new RuntimeException("Client not found"));

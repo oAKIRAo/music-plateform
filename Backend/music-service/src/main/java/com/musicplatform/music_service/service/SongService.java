@@ -6,6 +6,8 @@ import com.musicplatform.music_service.mapper.SongMapper;
 import com.musicplatform.music_service.repository.SongRepository;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.Tag;
 import org.springframework.core.io.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +47,7 @@ public class SongService {
 
     }
 
-    public SongDTO uploadSong(MultipartFile file, SongDTO songDTO) {
+    public SongDTO uploadSong(MultipartFile file) {
         try {
             // 1. Generate unique filename
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
@@ -59,10 +61,18 @@ public class SongService {
             // 5. Extract duration automatically
             AudioFile audioFile = AudioFileIO.read(filePath.toFile());
             int duration = audioFile.getAudioHeader().getTrackLength();
-            // 6. Set filePath + duration in entity
-            Song song = songMapper.toSong(songDTO);
+
+            Tag tag = audioFile.getTag();
+            String title = (tag != null) ? tag.getFirst(FieldKey.TITLE) : null;
+            String album = (tag != null) ? tag.getFirst(FieldKey.ALBUM) : null;
+            String artist = (tag != null) ? tag.getFirst(FieldKey.ARTIST) : null;
+            // 6. Set filePath + duration + title + album + artist in entity
+            Song song = new Song();
             song.setFilePath(filePath.toString());
             song.setDuration(duration);
+            song.setTitle(title);
+            song.setAlbum(album);
+            song.setArtist(artist);
             // 7. Save metadata to DB
             Song saved = songRepository.save(song);
             // 8. Return DTO
