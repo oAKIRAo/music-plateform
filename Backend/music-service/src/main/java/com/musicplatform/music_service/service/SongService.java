@@ -63,7 +63,9 @@ public class SongService {
             int duration = audioFile.getAudioHeader().getTrackLength();
 
             Tag tag = audioFile.getTag();
-            String title = (tag != null) ? tag.getFirst(FieldKey.TITLE) : null;
+            String title = (tag != null && !tag.getFirst(FieldKey.TITLE).isEmpty())
+                    ? tag.getFirst(FieldKey.TITLE)
+                    : file.getOriginalFilename();
             String album = (tag != null) ? tag.getFirst(FieldKey.ALBUM) : null;
             String artist = (tag != null) ? tag.getFirst(FieldKey.ARTIST) : null;
             // 6. Set filePath + duration + title + album + artist in entity
