@@ -2,6 +2,9 @@ package com.musicplatform.music_service.service;
 
 import com.musicplatform.music_service.dto.SongDTO;
 import com.musicplatform.music_service.entity.Song;
+import com.musicplatform.music_service.exception.FailedToUploadFileException;
+import com.musicplatform.music_service.exception.SongFileNotFoundException;
+import com.musicplatform.music_service.exception.SongNotFoundException;
 import com.musicplatform.music_service.mapper.SongMapper;
 import com.musicplatform.music_service.repository.SongRepository;
 import org.jaudiotagger.audio.AudioFile;
@@ -43,7 +46,7 @@ public class SongService {
     public SongDTO getSongById(Long id) {
        return songRepository.findById(id)
                .map(songMapper::toSongDTO)
-               .orElseThrow(() -> new RuntimeException("Song not found"));
+               .orElseThrow(() -> new SongNotFoundException(id));
 
     }
 
@@ -81,28 +84,28 @@ public class SongService {
             return songMapper.toSongDTO(saved);
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to upload file: " + e.getMessage());
+            throw new FailedToUploadFileException(e.getMessage());
         }
     }
 
     public Resource streamSong(Long id) {
         Song song = songRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Song not found"));
+                .orElseThrow(() -> new SongNotFoundException(id));
         try {
             Path path = Paths.get(song.getFilePath());
             Resource resource = new UrlResource(path.toUri());
             if(!resource.exists()) {
-                throw new RuntimeException("File not found");
+                throw new SongFileNotFoundException(song.getFilePath());
             }
             return resource;
         } catch (MalformedURLException e) {
-            throw new RuntimeException("File not found " + e.getMessage());
+            throw new SongFileNotFoundException(song.getFilePath());
         }
     }
 
     public void deleteSongById(Long id) {
         Song song = songRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Song not found"));
+                .orElseThrow(() -> new SongNotFoundException(id));
         songRepository.delete(song);
     }
 }

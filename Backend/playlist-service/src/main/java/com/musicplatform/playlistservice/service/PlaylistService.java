@@ -5,6 +5,8 @@ import com.musicplatform.playlistservice.dto.PlaylistResponse;
 import com.musicplatform.playlistservice.entity.Playlist;
 import com.musicplatform.playlistservice.entity.PlaylistSong;
 import com.musicplatform.playlistservice.entity.PlaylistSongId;
+import com.musicplatform.playlistservice.exception.PlaylistNotFoundException;
+import com.musicplatform.playlistservice.exception.SongNotFoundInPlaylistException;
 import com.musicplatform.playlistservice.mapper.PlaylistMapper;
 import com.musicplatform.playlistservice.repository.PlaylistRepository;
 import com.musicplatform.playlistservice.repository.PlaylistSongRepository;
@@ -28,7 +30,7 @@ public class PlaylistService {
 
    public PlaylistResponse getPlaylistById(Long id) {
        return playlistMapper.toDto(playlistRepository.findById(id)
-               .orElseThrow(() -> new RuntimeException("Playlist not found")));
+               .orElseThrow(() -> new PlaylistNotFoundException(id)));
    }
 
    public List<PlaylistResponse> getAllPlaylists() {
@@ -40,7 +42,7 @@ public class PlaylistService {
 
    public PlaylistResponse updatePlaylist(Long id, PlaylistRequest request) {
        Playlist playlist = playlistRepository.findById(id)
-               .orElseThrow(() -> new RuntimeException("Playlist not found"));
+               .orElseThrow(() -> new PlaylistNotFoundException(id));
        if(request.getName() != null) {
            playlist.setName(request.getName());
        }
@@ -53,13 +55,13 @@ public class PlaylistService {
 
     public void deletePlaylistById(Long id) {
         Playlist playlist = playlistRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Playlist not found"));
+                .orElseThrow(() -> new PlaylistNotFoundException(id));
         playlistRepository.delete(playlist);
     }
 
     public void addSongToPlaylist(Long playlistId, Long songId){
         if(!playlistRepository.existsById(playlistId)) {
-            throw new RuntimeException("Playlist not found");}
+            throw new PlaylistNotFoundException(playlistId);}
         PlaylistSongId playlistSongId = PlaylistSongId.builder()
                 .playlistId(playlistId)
                 .songId(songId)
@@ -76,7 +78,7 @@ public class PlaylistService {
                 .songId(songId)
                 .build();
         if(!playlistSongRepository.existsById(playlistSongId)) {
-            throw new RuntimeException("Song not in playlist");
+            throw new SongNotFoundInPlaylistException(playlistId, songId);
         }
         playlistSongRepository.deleteById(playlistSongId);
     }
