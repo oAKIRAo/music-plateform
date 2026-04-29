@@ -15,6 +15,7 @@ import org.springframework.core.io.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.UrlResource;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,6 +33,7 @@ public class SongService {
 
     private final SongRepository songRepository;
     private final SongMapper songMapper;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Value("${file.upload.dir}")
     private String uploadDir;
@@ -107,5 +109,6 @@ public class SongService {
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new SongNotFoundException(id));
         songRepository.delete(song);
+        kafkaTemplate.send("song-deleted", id.toString());
     }
 }

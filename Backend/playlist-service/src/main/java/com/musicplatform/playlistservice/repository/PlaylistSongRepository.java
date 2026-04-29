@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface PlaylistSongRepository extends JpaRepository<PlaylistSong, PlaylistSongId> {
     List<PlaylistSong> findByIdPlaylistId(Long playlistId);
+    void deleteByIdSongId(Long SongId);
 }

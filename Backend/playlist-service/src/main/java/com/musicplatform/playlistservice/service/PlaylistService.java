@@ -14,6 +14,7 @@ import com.musicplatform.playlistservice.repository.PlaylistSongRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -49,9 +50,16 @@ public class PlaylistService {
         //    → map the response to SongDetailsDTO
         // Result: list of song details from music-service
         List<SongDetailsDTO> songs = playlistSongs.stream()
-                .map(ps -> restTemplate.getForObject(
-                        musicServiceUrl + "/songs/" + ps.getId().getSongId(),
-                        SongDetailsDTO.class))
+                .map(ps ->{
+                        try {
+                             return restTemplate.getForObject(
+                              musicServiceUrl + "/songs/" + ps.getId().getSongId(),
+                               SongDetailsDTO.class);
+                        } catch (HttpClientErrorException.NotFound e) {
+                            return null;
+                        }
+                })
+                .filter( song -> song != null)
                 .toList();
         // 4. Convert playlist entity to DTO (name, userId, createdAt...)
         PlaylistResponse playlistResponse = playlistMapper.toDto(playlist);
